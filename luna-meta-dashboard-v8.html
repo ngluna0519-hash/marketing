@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Luna Meta Dashboard v8</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root{--bg:#f4f5f7;--card:#fff;--text:#17191d;--muted:#70757f;--line:#e6e9ee;--yellow:#f4b300;--red:#c83d00;--green:#16875b;--orange:#c66a00;--blue:#1f6fb0;--purple:#6d43c9;--teal:#0f8f9e;--shadow:0 8px 28px rgba(20,25,35,.06)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,system-ui,-apple-system,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;line-height:1.5}
+.app{display:grid;grid-template-columns:250px 1fr;min-height:100vh}
+aside{background:#111;color:#fff;padding:20px 16px;position:sticky;top:0;height:100vh;display:flex;flex-direction:column;gap:16px;overflow:auto}
+.brand h1{font-size:19px;margin:0}.brand p{font-size:12px;color:#b8bec7;line-height:1.55;margin-top:7px}
+.upload{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);padding:12px;border-radius:14px}
+.upload input{width:100%;background:#fff;border:0;border-radius:10px;padding:9px;font-size:12px}
+.small{font-size:11.5px;color:#aeb5bf;line-height:1.5}
+.nav{display:grid;gap:6px}
+.nav button{border:0;background:transparent;color:#d7dbe2;padding:11px 13px;border-radius:11px;text-align:left;cursor:pointer;font-size:13.5px}
+.nav button.active{background:#fff;color:#111;font-weight:800}
+.foot{margin-top:auto;border-top:1px solid rgba(255,255,255,.1);padding-top:12px}
+main{padding:26px 28px 60px}
+.hero{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;margin-bottom:18px;flex-wrap:wrap}
+.hero h2{margin:0;font-size:26px}.hero p{margin:7px 0 0;color:var(--muted);font-size:13.5px;max-width:760px}
+.pill{background:#fff;border:1px solid var(--line);border-radius:999px;padding:9px 13px;box-shadow:var(--shadow);font-size:12.5px;white-space:nowrap}
+.page{display:none}.page.active{display:block}
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:16px 18px;box-shadow:var(--shadow)}
+.grid{display:grid;gap:14px}.four{grid-template-columns:repeat(4,minmax(0,1fr))}.three{grid-template-columns:repeat(3,minmax(0,1fr))}.two{grid-template-columns:repeat(2,minmax(0,1fr))}
+.metric{position:relative}.metric .order{position:absolute;top:0;right:2px;font-size:11px;color:var(--muted);font-weight:800;opacity:.6}
+.metric .label{font-size:12px;color:var(--muted);font-weight:700}.metric .value{font-size:25px;font-weight:850;margin-top:8px;font-variant-numeric:tabular-nums}
+.metric .sub{font-size:12px;color:var(--muted);margin-top:7px;line-height:1.45;display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.section{display:flex;justify-content:space-between;align-items:end;gap:12px;margin-bottom:12px}.section h3{margin:0;font-size:16px}.section span{font-size:12px;color:var(--muted)}
+.table-wrap{overflow:auto;border:1px solid var(--line);border-radius:14px}
+table{width:100%;border-collapse:collapse;background:#fff}th,td{padding:10px 12px;border-bottom:1px solid var(--line);text-align:left;font-size:12.5px;vertical-align:top}
+th{background:#fafbfc;color:#5e6670;position:sticky;top:0;white-space:nowrap;font-size:11.5px}tr:last-child td{border-bottom:none}
+td.num{font-variant-numeric:tabular-nums;white-space:nowrap}
+.badge{display:inline-flex;border-radius:999px;padding:5px 9px;font-size:11.5px;font-weight:750;white-space:nowrap}
+.good{background:rgba(22,135,91,.1);color:var(--green)}.warn{background:rgba(198,106,0,.12);color:var(--orange)}.bad{background:rgba(200,61,0,.1);color:var(--red)}.neutral{background:#f0f2f5;color:#59616b}.info{background:rgba(31,111,176,.1);color:var(--blue)}.rt{background:rgba(109,67,201,.11);color:var(--purple)}
+.diagnosis{background:#fbfcfd;border:1px solid var(--line);border-radius:14px;padding:14px}.diagnosis h4{margin:0 0 7px;font-size:14.5px}.diagnosis p{margin:0;color:var(--muted);line-height:1.6;font-size:13px}
+.callout{border-radius:16px;padding:16px 18px;border:1px solid #f0d477;background:linear-gradient(135deg,#fff7df,#fffdf6);box-shadow:var(--shadow)}
+.callout h3{margin:0 0 4px;font-size:17px}.callout .lead-line{font-size:15px;font-weight:800;margin:5px 0 9px}.callout p{margin:5px 0 0;color:#4a4d55;font-size:13px;line-height:1.6}
+.principle{margin-top:9px;font-size:11.5px;color:#8a6a00;background:rgba(244,179,0,.1);border:1px solid #f1e2ad;border-radius:10px;padding:8px 11px;line-height:1.5}.principle b{color:#7a5c00}
+.bars{display:grid;gap:10px}.bar{display:grid;grid-template-columns:190px 1fr 92px;gap:12px;align-items:center;font-size:12.5px}
+.track{height:11px;background:#eef1f5;border-radius:999px;overflow:hidden}.fill{height:100%;background:linear-gradient(90deg,var(--yellow),#ffd05c)}
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:7px;vertical-align:middle}
+.mini{font-size:11px;color:var(--muted)}
+.notice{padding:12px 14px;border-radius:12px;background:#fff7dd;border:1px solid #f1d978;color:#705900;font-size:12.5px;line-height:1.55}
+.notice.info-note{background:#eaf4fb;border-color:#bcdcf0;color:#1c5a86}.notice.bad-note{background:#fdeee9;border-color:#f0c3b3;color:#8a3115}
+.notice.hidden,.hidden{display:none!important}
+.controls{display:flex;gap:12px;flex-wrap:wrap;align-items:center}.controls select{padding:9px;border:1px solid var(--line);border-radius:10px;background:#fff}
+.field label{display:block;font-size:11.5px;color:var(--muted);margin-bottom:6px}.field select{width:100%;padding:9px;border:1px solid var(--line);border-radius:10px;background:#fff}
+.mapping{display:none;margin-bottom:16px}.mapping.show{display:block}.mapping-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:11px}
+.btn{border:0;border-radius:11px;padding:11px 15px;font-weight:800;cursor:pointer}.btn-primary{background:#111;color:#fff}
+.target-box{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.target-box input{width:120px;padding:9px 11px;border:1px solid var(--line);border-radius:11px;font-size:15px;font-weight:800}
+.tcard .tv{font-size:22px;font-weight:850;font-variant-numeric:tabular-nums}.tcard .tl{font-size:12px;color:var(--muted);font-weight:700}
+.spark{width:100%;height:70px;display:block}
+.step3{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.stepnode{background:#111;color:#fff;border-radius:10px;padding:8px 12px;font-size:12px;text-align:center;min-width:90px}
+.steprate{font-size:12px;color:var(--blue);font-weight:800}
+#landing{display:none;min-height:78vh;align-items:center;justify-content:center;padding:10px}
+.land-card{background:#fff;border:1px solid var(--line);border-radius:22px;padding:30px 28px;max-width:660px;width:100%;box-shadow:var(--shadow)}
+.land-card .step{font-size:12px;font-weight:800;color:#a67c00;letter-spacing:.4px}
+.land-card h2{margin:6px 0 8px;font-size:24px}
+.land-card p{margin:0 0 16px;color:var(--muted);font-size:13.5px;line-height:1.6}
+#pasteBox{width:100%;min-height:160px;border:1.5px dashed #c9ccd2;border-radius:14px;padding:14px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;resize:vertical;background:#fbfcfd}
+#pasteBox:focus{outline:none;border-color:var(--yellow);background:#fff}
+.land-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px;align-items:center}
+.btn-ghost{background:#f0f2f5;color:#333}
+.btn-lg{padding:13px 22px;font-size:14px}
+main.pre .hero,main.pre .page,main.pre #mappingCard,main.pre #message{display:none}
+main.pre #landing{display:flex}
+.hero-btns{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+@media(max-width:1150px){.four{grid-template-columns:repeat(2,1fr)}.three{grid-template-columns:1fr}.mapping-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:860px){
+ body{padding-bottom:78px}.app{display:block}
+ aside{position:fixed;left:0;right:0;bottom:0;top:auto;height:auto;z-index:60;flex-direction:row;gap:6px;padding:8px;border-top:1px solid #333;overflow-x:auto}
+ .brand,.upload,.foot{display:none}.nav{grid-auto-flow:column;grid-template-columns:unset;gap:6px}
+ .nav button{white-space:nowrap;padding:9px 11px;font-size:12.5px}
+ main{padding:16px 12px 24px}.hero h2{font-size:21px}
+ .four,.three,.two{grid-template-columns:1fr}.bar{grid-template-columns:1fr;gap:5px}
+ .table-wrap{border:none}table,thead,tbody,tr,th,td{display:block;width:100%}thead{display:none}
+ tbody tr{background:#fff;border:1px solid var(--line);border-radius:14px;padding:12px;margin-bottom:12px}
+ td{display:grid;grid-template-columns:42% 58%;gap:8px;padding:7px 0;border-bottom:1px solid var(--line)}td:last-child{border-bottom:none}td::before{content:attr(data-l);font-weight:700;color:var(--muted);font-size:11.5px}
+}
+</style>
+</head>
+<body>
+<div class="app">
+<aside>
+  <div class="brand"><h1>Luna Meta Dashboard</h1><p><b>v8</b> · 分层 CPR + spend 趋势 + hook rate。导入 Meta Export → 自动分析。</p></div>
+  <div class="upload"><input id="fileInput" type="file" accept=".csv,.xlsx,.xls"><div class="small" style="margin-top:7px">上传新 Export 覆盖示例。建议勾 Breakdown → Time → Day，并带上 Link clicks / LP views / CTR / 3-sec plays / Shares。</div></div>
+  <div class="nav">
+    <button class="active" data-page="fourpi">01 · 4PI 解读</button>
+    <button data-page="trend">02 · 趋势</button>
+    <button data-page="creative">03 · 素材 / PEPC</button>
+    <button data-page="micro">04 · 站内漏斗</button>
+    <button data-page="video">05 · 完播</button>
+    <button data-page="ranking">06 · 排序</button>
+  </div>
+  <div class="foot small">下游（webinar / 约 call / 成交 / LTV）要接 CRM 主表，Meta Export 到不了那一层。</div>
+</aside>
+<main class="pre">
+<div id="landing">
+  <div class="land-card">
+    <div class="step">STEP 1 · 放数据　→　STEP 2 · 开始分析</div>
+    <h2>把你的 Meta 数据放进来</h2>
+    <p>从 Ads Manager 导出（勾 <b>Breakdown → Time → Day</b>），在 Excel/Sheets 里<b>选中整张表（含标题行）→ 复制 → 粘贴到下面</b>；或直接上传文件。放好后点「开始分析」，才会开始跑。</p>
+    <textarea id="pasteBox" placeholder="在这里粘贴 —— 从 Excel / Google Sheets 选整张表复制过来（Tab 或逗号分隔都行，要含标题行）"></textarea>
+    <div class="land-actions">
+      <button class="btn btn-primary btn-lg" id="analyzePaste">🚀 开始分析</button>
+      <label class="btn btn-ghost btn-lg" style="cursor:pointer">📁 上传文件<input id="fileInput2" type="file" accept=".csv,.xlsx,.xls" hidden></label>
+      <button class="btn btn-ghost" id="demoBtn">先用示例数据看看</button>
+    </div>
+    <div id="landErr" class="notice bad-note hidden" style="margin-top:14px"></div>
+  </div>
+</div>
+<div class="hero"><div><h2 id="title">4PI 解读</h2><p id="desc">先看 Meta 在依赖谁 — Spend → Frequency → CPM → Cost per Result</p></div><div class="hero-btns"><button id="reimport" class="btn btn-ghost" style="padding:8px 12px;font-size:12px">↻ 重新导入</button><button id="editMap" class="btn btn-ghost" style="padding:8px 12px;font-size:12px">栏位对应</button><span id="status" class="pill">示例数据</span></div></div>
+
+<div id="mappingCard" class="card mapping"><div class="section"><h3>检查栏位对应</h3><span id="headerInfo"></span></div><div id="mappingGrid" class="mapping-grid"></div><div style="margin-top:14px;display:flex;gap:10px;align-items:center"><button id="analyzeBtn" class="btn btn-primary">开始分析</button><span class="small">自动识别不准时，在这里改一次就好。<b>Results（报名）</b>认错时也在这里改成对的成效栏。</span></div></div>
+<div id="message" class="notice hidden" style="margin-bottom:16px"></div>
+
+<!-- 01 4PI -->
+<section id="fourpi" class="page active">
+  <div id="windowNote" class="notice hidden" style="margin-bottom:16px"></div>
+  <div class="callout" style="margin-bottom:16px"><h3>🎯 最弱的一环 · 现在只做这一件事</h3><div id="moveLead" class="lead-line">—</div><div id="moveBody"></div><div class="principle"><b>Rule of One：</b>一次只改一个变量，先修最弱的一环，然后观察。 &nbsp;<b>v8：</b>CPR 已改成分层对标（上层比上层、下层比下层）。</div></div>
+  <div class="card" style="margin-bottom:16px;background:linear-gradient(180deg,#fff,#fafbfd)">
+    <div class="section"><h3>🗺️ 漏斗地图 · 每支广告站在哪一层</h3><span>气泡=广告（大小=花费份额）· 高度=每日频次 · 虚线尾巴=平时→峰值</span></div>
+    <div id="funnelMap"></div>
+  </div>
+  <div class="grid four" id="fourCards" style="margin-bottom:16px"></div>
+  <div class="grid two" style="margin-bottom:16px">
+    <div class="card"><div class="section"><h3>💰 CPR 对比毛利</h3><span>CPR 是生意指标</span></div><div class="target-box"><span class="small">每个成效目标 / 打平 (MYR)：</span><input id="targetCPR" type="number" step="0.5" placeholder="例 30"><button class="btn btn-primary" id="applyTarget" style="padding:9px 14px">套用</button></div><div id="targetSummary" class="small" style="margin-top:12px;line-height:1.7"></div></div>
+    <div class="card"><div class="section"><h3>📊 Spend 分布</h3><span>Meta 押在谁身上</span></div><div id="spendBars" class="bars"></div></div>
+  </div>
+  <div class="card" style="margin-bottom:16px"><div class="section"><h3>漏斗结构</h3><span>预算落在哪一层</span></div><div id="funnelStack"></div><div id="funnelDiag" class="diagnosis" style="margin-top:14px"></div></div>
+  <div class="card" style="margin-bottom:16px"><div class="section"><h3>每支广告的 4PI 解读</h3><span>四个信号 → 角色 → 一个动作</span></div><div class="mini" style="margin-bottom:10px">频次列＝<b>平时</b>（加权日均）· <b>峰值</b>（去掉小量日的最高日）。CPR 列的 <b>同层</b>＝跟同一漏斗层的中位比（Disrupter 铁律）。角色列的 <b>Meta 加码/放弃</b>＝这支广告每日花费的走向（spend concentration，harvest 信号）。</div><div class="table-wrap"><table id="fourTable"></table></div><div id="smallAds"></div></div>
+  <div class="card"><div class="section"><h3>CPM × Frequency 象限</h3><span>4PI 核心</span></div><div id="quadrant"></div></div>
+</section>
+
+<!-- 02 TREND -->
+<section id="trend" class="page">
+  <div class="notice info-note" style="margin-bottom:16px">这页是<b>账号层的走向</b>（先看方向，再动广告）。它只到"报名"这一步——真正的生意趋势（成交 RM6888 / 毛利 / LTV）要接 CRM 主表。</div>
+  <div id="trendDiag" class="callout" style="margin-bottom:16px"><h3>📈 方向判断</h3><div id="trendLead" class="lead-line">—</div><div id="trendBody"></div></div>
+  <div class="grid three" id="trendCards"></div>
+</section>
+
+<!-- 03 CREATIVE -->
+<section id="creative" class="page">
+  <div class="notice info-note" style="margin-bottom:16px">按广告名里的 <b>PEPC / hook</b> 自动归类。命名越规范（如 <code>PEPC156 hook2</code>），归类越准。Shares / reactions 当作<b>共鸣·教育信号</b>看，不参与关广告。</div>
+  <div class="card" style="margin-bottom:16px"><div class="section"><h3>PEPC（Meat）排行</h3><span>哪个母素材在赢 · 断档预警</span></div><div id="pepcBars" class="bars"></div><div id="pepcDiag" class="diagnosis" style="margin-top:14px"></div></div>
+  <div class="card"><div class="section"><h3>每支广告 · 共鸣信号</h3><span>shares / reactions / comments</span></div><div class="table-wrap"><table id="creativeTable"></table></div></div>
+</section>
+
+<!-- 04 MICRO FUNNEL -->
+<section id="micro" class="page">
+  <div id="lpWarn" class="notice bad-note hidden" style="margin-bottom:16px"></div>
+  <div class="notice info-note" style="margin-bottom:16px">站内微漏斗：<b>展示 → 点击 → 报名</b>。这就是判决卡"3 秒诊断"的自动版——点击弱＝hook 问题，点了不报名＝落地页/报价问题。</div>
+  <div class="card" style="margin-bottom:16px"><div class="section"><h3>账号站内漏斗</h3><span>Impr → Click → Registration</span></div><div id="microFunnel" style="margin:6px 0 4px"></div></div>
+  <div class="card"><div class="section"><h3>每支广告 · 点击 / 转化诊断</h3><span>CTR 弱还是落地页弱</span></div><div class="table-wrap"><table id="microTable"></table></div></div>
+</section>
+
+<!-- 05 VIDEO -->
+<section id="video" class="page">
+  <div id="videoNotice" class="notice info-note hidden" style="margin-bottom:16px"></div>
+  <div id="videoCards" class="grid four" style="margin-bottom:16px"></div>
+  <div class="grid two" style="margin-bottom:16px"><div class="card"><div class="section"><h3>观看流失诊断</h3><span>自动降级</span></div><div id="videoDiag" class="diagnosis"></div></div><div class="card"><div class="section"><h3>Watch Funnel</h3><span>25→50→75→95</span></div><div id="watchBars" class="bars"></div></div></div>
+  <div class="card"><div class="section"><h3>每支广告 · 完播</h3><span>有多少显示多少</span></div><div class="table-wrap"><table id="videoTable"></table></div></div>
+</section>
+
+<!-- 06 RANK -->
+<section id="ranking" class="page">
+  <div class="card"><div class="section"><h3>排序</h3><span>按任意已识别指标</span></div><div class="controls"><label>指标 <select id="sortMetric"></select></label><label>顺序 <select id="sortDir"><option value="desc">高到低</option><option value="asc">低到高</option></select></label></div></div>
+  <div id="rankHighlights" class="grid three" style="margin-top:16px"></div>
+  <div class="card" style="margin-top:16px"><div class="section"><h3>Ranked Table</h3><span id="rankLabel"></span></div><div class="table-wrap"><table id="rankTable"></table></div></div>
+</section>
+
+</main></div>
+<script>
+const $=s=>document.querySelector(s),$$=s=>Array.from(document.querySelectorAll(s));
+const DEMO_ADS=[{"name":"Winner Post ID 2","spend":2239.22,"impressions":80179,"results":82,"cpm":27.93,"cpr":27.31,"dailyFrequency":1.0633,"dailyFrequencyMax":1.086,"dailyFrequencyMin":1.025,"linkClicks":1257,"lpViews":47,"shares":33,"reactions":164,"comments":2,"ctr":1.57,"cpc":1.78,"p25":6791,"p50":5043,"p75":3468,"p95":2154,"avgWatch":9.77,"v3sec":18450,"spendTrend":0.04},
+{"name":"Video - Luna - 322 Test 1 - PEPC 156 meat / hook 2 / hook 3","spend":1241.37,"impressions":27732,"results":41,"cpm":44.76,"cpr":30.28,"dailyFrequency":1.1053,"dailyFrequencyMax":1.196,"dailyFrequencyMin":1.058,"linkClicks":684,"lpViews":21,"shares":28,"reactions":61,"comments":0,"ctr":2.47,"cpc":1.81,"p25":1538,"p50":970,"p75":645,"p95":451,"avgWatch":14.95,"v3sec":5120,"spendTrend":0.31},
+{"name":"Video - Luna - 322 Test 2 - Eunice Testi hook 1 / hook 2 / hook 4","spend":994.06,"impressions":30736,"results":33,"cpm":32.34,"cpr":30.12,"dailyFrequency":1.1245,"dailyFrequencyMax":1.303,"dailyFrequencyMin":1.051,"linkClicks":519,"lpViews":21,"shares":10,"reactions":31,"comments":0,"ctr":1.69,"cpc":1.92,"p25":1090,"p50":820,"p75":684,"p95":562,"avgWatch":8.48,"v3sec":4980,"spendTrend":-0.22},
+{"name":"Winner Post ID 4","spend":2.49,"impressions":128,"results":0,"cpm":19.45,"cpr":null,"dailyFrequency":1.0324,"dailyFrequencyMax":1.030,"dailyFrequencyMin":1.030,"linkClicks":2,"lpViews":0,"shares":0,"reactions":0,"comments":0,"ctr":1.56,"cpc":1.24,"p25":1,"p50":0,"p75":0,"p95":0,"avgWatch":3.0,"v3sec":30,"spendTrend":0},
+{"name":"Winner Post ID 1","spend":1.27,"impressions":37,"results":0,"cpm":34.32,"cpr":null,"dailyFrequency":1.0914,"dailyFrequencyMax":1.167,"dailyFrequencyMin":1.000,"linkClicks":1,"lpViews":0,"shares":0,"reactions":0,"comments":0,"ctr":2.7,"cpc":1.27,"p25":0,"p50":0,"p75":0,"p95":0,"avgWatch":0.0,"v3sec":8,"spendTrend":0},
+{"name":"Winner Post ID 3","spend":0.13,"impressions":5,"results":0,"cpm":26.0,"cpr":null,"dailyFrequency":1.0,"dailyFrequencyMax":1.0,"dailyFrequencyMin":1.0,"linkClicks":0,"lpViews":0,"shares":0,"reactions":0,"comments":0,"ctr":0.0,"cpc":null,"p25":0,"p50":0,"p75":0,"p95":0,"avgWatch":0.0,"v3sec":1,"spendTrend":0}];
+const DEMO_SERIES=[{"day":"07-08","spend":228.79,"results":6,"impressions":7182,"clicks":116,"lpViews":2,"cpr":38.13,"cpm":31.86,"ctr":1.62,"frequency":1.2052},{"day":"07-09","spend":488.79,"results":19,"impressions":12356,"clicks":280,"lpViews":10,"cpr":25.73,"cpm":39.56,"ctr":2.27,"frequency":1.1731},{"day":"07-10","spend":448.88,"results":18,"impressions":12979,"clicks":272,"lpViews":11,"cpr":24.94,"cpm":34.59,"ctr":2.1,"frequency":1.0756},{"day":"07-11","spend":484.58,"results":17,"impressions":16339,"clicks":255,"lpViews":11,"cpr":28.5,"cpm":29.66,"ctr":1.56,"frequency":1.0836},{"day":"07-12","spend":522.65,"results":21,"impressions":15644,"clicks":259,"lpViews":14,"cpr":24.89,"cpm":33.41,"ctr":1.66,"frequency":1.0926},{"day":"07-13","spend":513.76,"results":17,"impressions":18906,"clicks":298,"lpViews":8,"cpr":30.22,"cpm":27.17,"ctr":1.58,"frequency":1.0595},{"day":"07-14","spend":496.37,"results":17,"impressions":17551,"clicks":344,"lpViews":10,"cpr":29.2,"cpm":28.28,"ctr":1.96,"frequency":1.0457},{"day":"07-15","spend":472.03,"results":13,"impressions":13850,"clicks":227,"lpViews":9,"cpr":36.31,"cpm":34.08,"ctr":1.64,"frequency":1.0719},{"day":"07-16","spend":458.41,"results":19,"impressions":14015,"clicks":228,"lpViews":10,"cpr":24.13,"cpm":32.71,"ctr":1.63,"frequency":1.0658},{"day":"07-17","spend":364.28,"results":9,"impressions":9995,"clicks":184,"lpViews":4,"cpr":40.48,"cpm":36.45,"ctr":1.84,"frequency":1.0571}];
+const FREQ_PROSPECT=1.15,FREQ_RETARGET=1.25,ACTIVE_SHARE=0.02;
+let matrix=[],headers=[],dataRows=[],mapping={},ads=[],series=[],fileName='',headerRowIndex=-1,targetCPR=null,usingDemo=true;
+const fields={
+ ad:{label:'Ad Name',required:true,aliases:['ad name','广告名称','广告名','广告']},
+ day:{label:'Day / Date',aliases:['day','date','日期','reporting starts','reporting start']},
+ spend:{label:'Spend',required:true,aliases:['amount spent','amount spent myr','spend','花费','已花费金额']},
+ impressions:{label:'Impressions',aliases:['impressions','展示次数','展示']},
+ reach:{label:'Reach',aliases:['reach','触达人数','覆盖人数','触达']},
+ frequency:{label:'Frequency',aliases:['frequency','频次','频率']},
+ cpm:{label:'CPM',aliases:['cpm','cost per 1000 impressions','千次展示费用']},
+ results:{label:'Results (报名 KPI)',required:true,aliases:['registrations completed','website registrations completed','registrations','报名','results','result','成效','leads','purchases']},
+ cpr:{label:'Cost per Result',aliases:['cost per registration completed','cost per result','cost per lead','单次成效费用']},
+ linkClicks:{label:'Link Clicks',aliases:['link clicks','链接点击量','点击量']},
+ lpViews:{label:'Landing Page Views',aliases:['landing page views','website landing page views','落地页浏览量']},
+ ctr:{label:'CTR',aliases:['ctr','link click-through rate','点击率']},
+ cpc:{label:'CPC',aliases:['cpc','cost per link click']},
+ shares:{label:'Post Shares',aliases:['post shares','分享']},
+ reactions:{label:'Post Reactions',aliases:['post reactions','表态','互动']},
+ comments:{label:'Post Comments',aliases:['post comments','评论']},
+ v3sec:{label:'3-Second Video Plays',aliases:['3 second video plays','3-second video plays','video plays 3s','video plays at 3','三秒视频播放','3 秒视频播放']},
+ p25:{label:'Video 25%',aliases:['video plays at 25','25 video plays','视频播放进度 25']},
+ p50:{label:'Video 50%',aliases:['video plays at 50','视频播放进度 50']},
+ p75:{label:'Video 75%',aliases:['video plays at 75','视频播放进度 75']},
+ p95:{label:'Video 95% / 100%',aliases:['video plays at 95','video plays at 100','视频播放进度 95']},
+ avgWatch:{label:'Avg Watch Time',aliases:['video average play time','平均视频播放时间']}
+};
+function norm(v){return String(v??'').toLowerCase().normalize('NFKD').replace(/\([^)]*\)/g,' ').replace(/[%,$/\\:_-]/g,' ').replace(/\b(myr|usd|sgd|rm)\b/g,' ').replace(/\s+/g,' ').trim()}
+function scoreHeaderCell(cell,alias){const c=norm(cell),a=norm(alias);if(!c||!a)return 0;if(c===a)return 100;if(c.includes(a)||a.includes(c))return 80;const ct=new Set(c.split(' ')),at=a.split(' ');const hits=at.filter(x=>ct.has(x)).length;return hits/Math.max(1,at.length)*60}
+function bestColumnFor(field){let best={i:-1,s:0};headers.forEach((h,i)=>fields[field].aliases.forEach(a=>{const s=scoreHeaderCell(h,a);if(s>best.s)best={i,s}}));return best.s>=45?best.i:-1}
+function detectHeaderIn(mtx){let best={row:-1,score:-1};for(let r=0;r<Math.min(mtx.length,50);r++){const row=mtx[r]||[];let hits=0,q=0;for(const k of Object.keys(fields)){let m=0;for(const cell of row)for(const a of fields[k].aliases)m=Math.max(m,scoreHeaderCell(cell,a));if(m>=45){hits++;q+=m}}const sc=hits*100+q;if(hits>=3&&sc>best.score)best={row:r,score:sc}}return best}
+function detectHeader(){return detectHeaderIn(matrix).row}
+function parseNum(v){if(v===null||v===undefined||v==='')return NaN;if(typeof v==='number')return v;let s=String(v).replace(/,/g,'').replace(/RM|MYR|USD|SGD/ig,'').replace(/%/g,'').trim();if(/^\(.*\)$/.test(s))s='-'+s.slice(1,-1);const n=Number(s);return Number.isFinite(n)?n:NaN}
+function nz(v){return Number.isFinite(v)?v:0}
+function fmt(n,d=0){return Number.isFinite(n)?n.toLocaleString(undefined,{minimumFractionDigits:d,maximumFractionDigits:d}):'—'}
+function money(n){return Number.isFinite(n)?'RM '+fmt(n,2):'—'}
+function pct(n,d=1){return Number.isFinite(n)?fmt(n,d)+'%':'—'}
+function rate(a,b){return Number.isFinite(a)&&Number.isFinite(b)&&b>0?a/b*100:NaN}
+function esc(s){return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
+function val(row,key){const i=mapping[key];return i>=0?row[i]:''}
+function median(arr){const v=arr.filter(Number.isFinite).sort((a,b)=>a-b);if(!v.length)return NaN;const m=Math.floor(v.length/2);return v.length%2?v[m]:(v[m-1]+v[m])/2}
+function badge(t,c='neutral'){return `<span class="badge ${c}">${t}</span>`}
+function metric(order,l,v,sub){return `<div class="card metric"><div class="order">${order}</div><div class="label">${l}</div><div class="value">${v}</div><div class="sub">${sub}</div></div>`}
+function shortName(n){n=String(n||'');return n.length>44?n.slice(0,42)+'…':n}
+function freqOf(a){return Number.isFinite(a.dailyFrequency)?a.dailyFrequency:a.cumulativeFrequency}
+
+async function readFile(file){const buf=await file.arrayBuffer();const wb=XLSX.read(buf,{type:'array'});
+  let bestM=null,bestS=-1;
+  wb.SheetNames.forEach(sn=>{const m=XLSX.utils.sheet_to_json(wb.Sheets[sn],{header:1,defval:'',raw:true});const d=detectHeaderIn(m);const sc=(d.row>=0?d.score:-1)+Math.min(m.length,500)*0.01;if(sc>bestS){bestS=sc;bestM=m}});
+  return bestM||XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1,defval:'',raw:true})}
+function exitPre(){document.querySelector('main').classList.remove('pre')}
+function landErr(m){const el=$('#landErr');el.textContent='读取失败：'+m;el.classList.remove('hidden')}
+function runAnalyze(mtx){
+  matrix=mtx;headerRowIndex=detectHeader();
+  if(headerRowIndex<0)throw new Error('找不到标题行——确认你复制/上传了含标题的整张表');
+  headers=matrix[headerRowIndex].map(x=>String(x??'').trim());
+  dataRows=matrix.slice(headerRowIndex+1).filter(r=>r.some(x=>String(x??'').trim()!==''));
+  mapping={};Object.keys(fields).forEach(k=>mapping[k]=bestColumnFor(k));
+  if(mapping.ad<0||mapping.spend<0)throw new Error('识别不到 Ad Name 或 Spend 栏位——点「栏位对应」手动指定');
+  usingDemo=false;buildAds();buildSeries();targetCPR=null;$('#targetCPR').value='';
+  renderAll();exitPre();$('#status').textContent=`已分析 ${ads.length} 支广告 · ${series.length} 天`;
+  $('#landErr').classList.add('hidden');
+}
+function parsePasted(txt){
+  const lines=txt.replace(/\r/g,'').split('\n').filter(l=>l.trim()!=='');
+  if(!lines.length)return[];
+  const tabC=(lines[0].match(/\t/g)||[]).length,comC=(lines[0].match(/,/g)||[]).length;
+  const d=tabC>=comC?'\t':',';
+  return lines.map(l=>l.split(d).map(c=>c.replace(/^"|"$/g,'').trim()));
+}
+$('#analyzePaste').onclick=()=>{try{const m=parsePasted($('#pasteBox').value);if(m.length<2)throw new Error('没读到表格数据——先粘贴你的数据');runAnalyze(m)}catch(e){landErr(e.message)}};
+$('#demoBtn').onclick=()=>{ads=DEMO_ADS.map(a=>({...a,cumulativeFrequency:a.dailyFrequency}));series=DEMO_SERIES.slice();usingDemo=true;renderAll();exitPre();$('#status').textContent='示例数据'};
+$('#fileInput2').onchange=async e=>{const f=e.target.files[0];if(!f)return;fileName=f.name;if(typeof XLSX==='undefined'){landErr('SheetJS 还没载入（要网络）。文件上传暂用不了，先用「粘贴」那条路。');return}try{const m=await readFile(f);runAnalyze(m);$('#status').textContent=`${shortName(fileName)} · ${ads.length} 支广告`}catch(err){landErr(err.message)}};
+$('#reimport').onclick=()=>{document.querySelector('main').classList.add('pre');$('#pasteBox').value='';$('#landErr').classList.add('hidden')};
+$('#editMap').onclick=()=>{if(!headers.length){showMsg('先导入数据再调整栏位。',true);return}renderMapping();$('#mappingCard').classList.add('show');window.scrollTo({top:0})};
+$('#fileInput').addEventListener('change',async e=>{const f=e.target.files[0];if(!f)return;fileName=f.name;if(typeof XLSX==='undefined'){showMsg('SheetJS 还没载入（要网络）。先用粘贴那条路。',true);return}try{const m=await readFile(f);runAnalyze(m);$('#status').textContent=`${shortName(fileName)} · ${ads.length} 支广告`}catch(err){showMsg('读取失败：'+err.message,true)}});
+function renderMapping(){const opts=['<option value="-1">— 不使用 —</option>',...headers.map((h,i)=>`<option value="${i}">${i+1}. ${esc(h||'(空白栏)')}</option>`)].join('');
+  $('#mappingGrid').innerHTML=Object.keys(fields).map(k=>`<div class="field"><label>${fields[k].label}${fields[k].required?' *':''}</label><select data-key="${k}">${opts}</select></div>`).join('');
+  $$('#mappingGrid select').forEach(s=>{s.value=String(mapping[s.dataset.key]);s.onchange=()=>mapping[s.dataset.key]=Number(s.value)});
+  $('#headerInfo').textContent=`标题行 ${headerRowIndex+1} · ${headers.length} 栏`;}
+$('#analyzeBtn').onclick=()=>{if(mapping.ad<0||mapping.spend<0){showMsg('至少需要 Ad Name 和 Spend。',true);return}usingDemo=false;buildAds();buildSeries();targetCPR=null;$('#targetCPR').value='';renderAll();exitPre();$('#mappingCard').classList.remove('show');showMsg(`分析完成：${ads.length} 支广告 · ${series.length} 天。`,false);};
+
+function buildAds(){
+  let rows=dataRows.map(r=>r.slice()),lastAd='';
+  rows.forEach(r=>{const n=String(val(r,'ad')??'').trim();if(n)lastAd=n;else if(mapping.ad>=0)r[mapping.ad]=lastAd});
+  const groups=new Map();
+  for(const r of rows){const name=String(val(r,'ad')??'').trim();if(!name||/^total$/i.test(name))continue;if(!groups.has(name))groups.set(name,[]);groups.get(name).push(r)}
+  ads=[...groups.entries()].map(([name,rs])=>aggregateAd(name,rs));
+}
+function sumRows(rs,key){return rs.reduce((s,r)=>s+(Number.isFinite(parseNum(val(r,key)))?parseNum(val(r,key)):0),0)}
+function aggregateAd(name,rs){
+  const daily=mapping.day>=0?rs.filter(r=>{const d=String(val(r,'day')).trim();return d&&!/^all$/i.test(d)}):[];
+  const allRows=mapping.day>=0?rs.filter(r=>/^all$/i.test(String(val(r,'day')).trim())):[];
+  const base=daily.length?daily:(allRows.length?allRows:rs);
+  const spend=sumRows(base,'spend'),impressions=sumRows(base,'impressions'),results=sumRows(base,'results');
+  const linkClicks=sumRows(base,'linkClicks'),lpViews=sumRows(base,'lpViews'),shares=sumRows(base,'shares'),reactions=sumRows(base,'reactions'),comments=sumRows(base,'comments');
+  const v3sec=sumRows(base,'v3sec');
+  let fn=0,fd=0;const fpts=[];daily.forEach(r=>{let f=parseNum(val(r,'frequency'));const w=parseNum(val(r,'impressions'));
+    if(!Number.isFinite(f)){const rch=parseNum(val(r,'reach'));if(Number.isFinite(w)&&Number.isFinite(rch)&&rch>0)f=w/rch}
+    const im=Number.isFinite(w)&&w>0?w:1;if(Number.isFinite(f)){fn+=f*im;fd+=im;if(Number.isFinite(w)&&w>0)fpts.push([f,w])}});
+  const dailyFrequency=fd?fn/fd:NaN;
+  let dailyFrequencyMax=NaN,dailyFrequencyMin=NaN;
+  if(fpts.length){const mx=Math.max(...fpts.map(p=>p[1])),floor=0.2*mx;const gv=fpts.filter(p=>p[1]>=floor).map(p=>p[0]);dailyFrequencyMax=Math.max(...gv);dailyFrequencyMin=Math.min(...gv);}
+  // v8: per-ad daily spend series -> spend-concentration trend (harvest signal)
+  const dailySpend=daily.map(r=>({day:dayStr(val(r,'day')),spend:nz(parseNum(val(r,'spend')))})).filter(d=>d.day).sort((a,b)=>a.day<b.day?-1:1);
+  let spendTrend=0;
+  {const sv=dailySpend.map(d=>d.spend).filter(Number.isFinite);if(sv.length>=4){const h=Math.floor(sv.length/2);const a=sv.slice(0,h).reduce((s,x)=>s+x,0)/h,b=sv.slice(-h).reduce((s,x)=>s+x,0)/h;spendTrend=(b-a)/(Math.abs(a)||1);}}
+  const cpm=impressions>0?spend/impressions*1000:NaN, cpr=results>0?spend/results:NaN;
+  const ctr=impressions>0?linkClicks/impressions*100:NaN, cpc=linkClicks>0?spend/linkClicks:NaN;
+  const p25=sumRows(base,'p25'),p50=sumRows(base,'p50'),p75=sumRows(base,'p75'),p95=sumRows(base,'p95');
+  const avgWatch=parseNum(val((daily[0]||rs[0]||[]),'avgWatch'));
+  return {name,spend,impressions,results,cpm,cpr,dailyFrequency,dailyFrequencyMax,dailyFrequencyMin,cumulativeFrequency:dailyFrequency,hasDailyRows:daily.length>0,linkClicks,lpViews,shares,reactions,comments,v3sec,ctr,cpc,p25,p50,p75,p95,avgWatch,dailySpend,spendTrend};
+}
+function dayStr(v){const n=Number(v);if(Number.isFinite(n)&&n>25569&&n<80000){const dt=new Date(Date.UTC(1899,11,30)+n*86400000);return dt.toISOString().slice(0,10)}return String(v??'').trim()}
+function buildSeries(){
+  if(mapping.day<0){series=[];return}
+  const m=new Map();
+  for(const r of dataRows){const d=dayStr(val(r,'day'));if(!d||/^all$/i.test(d))continue;const k=d.length>10?d.slice(0,10):d;
+    if(!m.has(k))m.set(k,{day:k,spend:0,results:0,impressions:0,clicks:0,lpViews:0,fn:0,fd:0});
+    const e=m.get(k);e.spend+=nz(parseNum(val(r,'spend')));e.results+=nz(parseNum(val(r,'results')));e.impressions+=nz(parseNum(val(r,'impressions')));e.clicks+=nz(parseNum(val(r,'linkClicks')));e.lpViews+=nz(parseNum(val(r,'lpViews')));
+    const f=parseNum(val(r,'frequency')),w=parseNum(val(r,'impressions'));if(Number.isFinite(f)&&Number.isFinite(w)&&w>0){e.fn+=f*w;e.fd+=w}}
+  series=[...m.values()].sort((a,b)=>a.day<b.day?-1:1).map(e=>({day:e.day.length>5?e.day.slice(5):e.day,spend:e.spend,results:e.results,impressions:e.impressions,clicks:e.clicks,lpViews:e.lpViews,cpr:e.results?e.spend/e.results:NaN,cpm:e.impressions?e.spend/e.impressions*1000:NaN,ctr:e.impressions?e.clicks/e.impressions*100:NaN,frequency:e.fd?e.fn/e.fd:NaN}));
+}
+
+/* ---- 4PI ---- */
+function context(){const totalSpend=ads.reduce((s,a)=>s+(a.spend||0),0);const active=ads.filter(a=>totalSpend>0&&a.spend/totalSpend>=ACTIVE_SHARE);const cpmMed=median(active.map(a=>a.cpm));const cprMed=median(active.filter(a=>Number.isFinite(a.cpr)).map(a=>a.cpr));const target=Number.isFinite(targetCPR)&&targetCPR>0?targetCPR:cprMed;
+ const layerCprMed={};['prospect','mid','retarget'].forEach(k=>{const arr=active.filter(a=>freqRole(freqOf(a)).key===k&&Number.isFinite(a.cpr)).map(a=>a.cpr);layerCprMed[k]=median(arr);});
+ return{totalSpend,active,cpmMed,cprMed,target,layerCprMed}}
+function freqRole(f){if(!Number.isFinite(f))return{key:'unknown',label:'未知',cls:'neutral'};if(f<FREQ_PROSPECT)return{key:'prospect',label:'拓新·上层',cls:'good'};if(f<FREQ_RETARGET)return{key:'mid',label:'中段',cls:'info'};return{key:'retarget',label:'再营销·下层',cls:'rt'}}
+function quadrantOf(a,ctx){const f=freqOf(a);if(!Number.isFinite(f)||!Number.isFinite(a.cpm))return null;const lowF=f<FREQ_PROSPECT,highF=f>=FREQ_RETARGET,highC=a.cpm>=ctx.cpmMed*1.05,lowC=a.cpm<=ctx.cpmMed*0.95;if(lowF&&!highC)return{key:'prospect',label:'拓新'};if(lowF&&highC)return{key:'exp-prospect',label:'昂贵拓新'};if(highF&&lowC)return{key:'concentrated',label:'集中投放'};if(highF)return{key:'retarget',label:'再营销'};return{key:'mid',label:'中段'}}
+function layerMedOf(a,ctx){const k=freqRole(freqOf(a)).key;const lm=ctx.layerCprMed&&Number.isFinite(ctx.layerCprMed[k])?ctx.layerCprMed[k]:NaN;return Number.isFinite(lm)?lm:ctx.cprMed}
+function trendTagOf(a){const t=a.spendTrend||0;if(t>0.15)return{t:'Meta 加码 · harvest 候选',c:'good'};if(t<-0.15)return{t:'Meta 在放弃',c:'warn'};return null}
+function classify(a,ctx){const share=ctx.totalSpend>0?a.spend/ctx.totalSpend:0;const active=share>=ACTIVE_SHARE;const f=freqOf(a),fr=freqRole(f);const cpmHigh=Number.isFinite(a.cpm)&&a.cpm>=ctx.cpmMed*1.15,cpmLow=Number.isFinite(a.cpm)&&a.cpm<=ctx.cpmMed*0.85;const cprGood=Number.isFinite(a.cpr)&&Number.isFinite(ctx.target)&&a.cpr<=ctx.target;
+ const layerMed=layerMedOf(a,ctx);const cprWorse=Number.isFinite(a.cpr)&&Number.isFinite(layerMed)&&a.cpr>layerMed*1.05;
+ const spendHigh=share>=0.15,spendLow=share<=0.05;const trendTag=trendTagOf(a);
+ let out;
+ if(!active)out={role:'未启用',cls:'neutral',story:'系统几乎没给它花费，证据不足。',move:'留作素材库，下轮再给公平机会。'};
+ else if(spendLow&&cpmHigh&&cprWorse)out={role:'移除候选',cls:'bad',story:'花费低 + CPM 高 + CPR 差（比同层贵），三个信号同时红。',move:'最干净的关闭对象。'};
+ else if(spendHigh&&cpmLow&&fr.key==='prospect')out={role:'拓新主力',cls:'good',story:'高花费 + 低 CPM + 低频，在接触新的冷受众。'+(cprGood?' CPR 已达标，很健康。':' CPR 略高是拓新正常代价。'),move:cprGood?'保留，可作为加预算地基。':'别因 CPR 高就关，先补下层承接。'};
+ else if(fr.key==='retarget'){if(cprGood)out={role:'承接/收割',cls:'rt',story:'高频 + CPR 达标，在收割现成需求。',move:'保留；它需要上层持续喂人。'};else out={role:'再营销失灵',cls:'bad',story:'频次高却转不动，漏斗可能在干涸。',move:'上新的拓新把漏斗打开。'};}
+ else if(fr.key==='prospect'&&cpmHigh)out={role:'昂贵拓新',cls:'warn',story:'低频但 CPM 偏高，Meta 用较贵受众拓新，效率待验证。',move:cprWorse?'和同层拓新比 CPR；持续差就换更省的素材。':'继续观察，CPR 追得上就行。'};
+ else if(fr.key==='prospect')out={role:'拓新',cls:'good',story:'低频、CPM 不高，在接触新受众。'+(cprGood?' CPR 达标。':' CPR 略高属正常。'),move:cprGood?'健康，可作放大候选。':'保留观察，要提升就补下层。'};
+ else out={role:'中段/待观察',cls:'info',story:'频次在灰区，角色未定。',move:'先不动，一次只改一个变量。'};
+ out.fr=fr;out.share=share;out.layerMed=layerMed;out.cprWorse=cprWorse;out.trendTag=trendTag;
+ return out;}
+function accountDiagnosis(ctx){const active=ctx.active;if(!active.length)return{lead:'没有在花费的广告。',body:'请检查栏位对应。'};const roles=active.map(a=>freqRole(freqOf(a)).key);const nP=roles.filter(k=>k==='prospect').length,nR=roles.filter(k=>k==='retarget').length,n=active.length;
+ const wc=active.filter(a=>Number.isFinite(a.cpr));const excess=a=>{const lm=layerMedOf(a,ctx);return Number.isFinite(lm)&&lm>0?a.cpr/lm:a.cpr/(ctx.cprMed||1)};
+ const worst=wc.slice().sort((a,b)=>excess(b)-excess(a))[0];const best=wc.slice().sort((a,b)=>a.cpr-b.cpr)[0];let lead,body='';
+ if(nR===0&&nP>=1){lead='整个账号都在「拓新」，缺一支下层承接/再营销。';body=`${n} 支在跑的广告每日频次都 < ${FREQ_PROSPECT}（全上层）。你一直把新人带进来，却没有一支专门成交他们的广告。<br><br><b>下一步：</b>做一支下层承接广告（针对已看过内容/进过落地页的熟人），这是现在最缺、也最可能立刻拉低整体 CPR 的一环。`;}
+ else if(nP===0&&nR>=1){lead='账号全在「再营销」，漏斗在干涸。';body='频次普遍偏高，触达不到新人。<br><br><b>下一步：</b>上一支低 CPM 的拓新。';}
+ else if(worst&&best&&worst!==best&&excess(worst)>1.2){lead=`最弱的一环：${esc(shortName(worst.name))}`;body=`它在<b>自己那一层里</b>偏贵（CPR ${money(worst.cpr)}，同层中位 ${money(layerMedOf(worst,ctx))}）。最好的只要 ${money(best.cpr)}。<br><br><b>下一步：</b>同预算上一个挑战者去打它，别直接改它。`;}
+ else{lead='账号结构基本健康，没有单一红灯。';body='<b>下一步：</b>若毛利在涨，最大的动作是给主力加预算。';}
+ if(n>8)body+=`<br><br><span class="mini">⚠ ${n} 支在跑，超过建议的 4–8 支。</span>`;
+ return{lead,body,nP,nR,n};}
+
+function renderAll(){renderFour();renderTrend();renderCreative();renderMicro();renderVideo();setupRanking();showPage('fourpi');}
+
+function roleColor(cls){return cls==='good'?'#16875b':cls==='rt'?'#6d43c9':cls==='info'?'#1f6fb0':cls==='warn'?'#c66a00':cls==='bad'?'#c83d00':'#9aa1ab'}
+function renderFunnelMap(){
+  const ctx=context();const act=[...ctx.active].sort((a,b)=>b.spend-a.spend);
+  const el=$('#funnelMap');if(!el)return;
+  if(!act.length){el.innerHTML='<p class="mini">没有在花费的广告。</p>';return}
+  const peaks=act.map(a=>Number.isFinite(a.dailyFrequencyMax)?a.dailyFrequencyMax:freqOf(a)).filter(Number.isFinite);
+  const fMax=Math.max(1.38,...peaks.map(p=>p*1.06));
+  const W=1000,H=500,top=42,bot=76;
+  const y=f=>top+(Math.max(1,Math.min(f,fMax))-1)/(fMax-1)*(H-top-bot);
+  const cx=W/2;
+  const HW=yy=>{const t=(yy-top)/(H-top-bot);return (0.47-(0.47-0.16)*t)*W};
+  const poly=(f0,f1)=>{const y0=y(f0),y1=y(f1);return `${cx-HW(y0)/2},${y0} ${cx+HW(y0)/2},${y0} ${cx+HW(y1)/2},${y1} ${cx-HW(y1)/2},${y1}`};
+  const bands=[[1.0,1.15,'rgba(22,135,91,.09)','#16875b','拓新 · 上层','频次 < 1.15 · 触达新的人'],
+               [1.15,1.25,'rgba(31,111,176,.09)','#1f6fb0','中段 · 灰区','1.15 – 1.25'],
+               [1.25,fMax,'rgba(109,67,201,.10)','#6d43c9','再营销 · 下层','> 1.25 · 反复打熟人 · 收口']];
+  let svg='';
+  bands.forEach(([f0,f1,fill,stroke,label,sub])=>{svg+=`<polygon points="${poly(f0,f1)}" fill="${fill}"/>`;svg+=`<text x="14" y="${y(f0)+16}" font-size="13" font-weight="800" fill="${stroke}">${label}</text><text x="14" y="${y(f0)+32}" font-size="10.5" fill="#8a9099">${sub}</text>`;});
+  [1.15,1.25].forEach(f=>{svg+=`<line x1="${cx-HW(y(f))/2}" y1="${y(f)}" x2="${cx+HW(y(f))/2}" y2="${y(f)}" stroke="#c6ccd6" stroke-dasharray="5 5"/><text x="${cx+HW(y(f))/2+8}" y="${y(f)+4}" font-size="11" fill="#8a9099">${f.toFixed(2)}</text>`});
+  const anyLower=act.some(a=>freqOf(a)>=FREQ_RETARGET);
+  if(!anyLower){const y0=y(1.25),y1=y(fMax),ym=(y0+y1)/2,w=HW(ym)/2*1.5;
+    svg+=`<rect x="${cx-w/2}" y="${y0+10}" width="${w}" height="${y1-y0-18}" rx="12" fill="none" stroke="#c83d00" stroke-dasharray="6 6" stroke-width="1.6"/>`;
+    svg+=`<text x="${cx}" y="${ym-4}" text-anchor="middle" font-size="14" font-weight="800" fill="#c83d00">⚠ 缺口：这里没有广告</text>`;
+    svg+=`<text x="${cx}" y="${ym+15}" text-anchor="middle" font-size="11" fill="#a05b47">被上层教育好的人，没有一支广告在这里成交他们</text>`;}
+  const n=act.length,totS=ctx.totalSpend||1;
+  act.forEach((a,i)=>{
+    const f=freqOf(a);if(!Number.isFinite(f))return;
+    const yy=y(f);const avail=HW(yy)*0.86;const x=cx-avail/2+(i+0.5)*avail/n;
+    const share=a.spend/totS;const r=Math.max(14,Math.min(46,12+52*Math.sqrt(share)));
+    const col=roleColor(classify(a,ctx).cls);
+    const pk=a.dailyFrequencyMax;
+    if(Number.isFinite(pk)&&pk>f+0.008){const ype=y(pk);const cross=pk>=FREQ_RETARGET;
+      svg+=`<line x1="${x}" y1="${yy}" x2="${x}" y2="${ype}" stroke="${cross?'#6d43c9':'#b8bec9'}" stroke-width="2" stroke-dasharray="4 4"/><circle cx="${x}" cy="${ype}" r="4.5" fill="${cross?'#6d43c9':'#b8bec9'}"/>`;
+      if(cross)svg+=`<text x="${x+9}" y="${ype+4}" font-size="10.5" font-weight="700" fill="#6d43c9">峰值 ${fmt(pk,2)}↓</text>`;}
+    svg+=`<g><title>${esc(a.name)} · ${pct(share*100,1)} 花费 · 频次 ${fmt(f,2)}${Number.isFinite(pk)?'（峰值 '+fmt(pk,2)+'）':''} · CPR ${Number.isFinite(a.cpr)?fmt(a.cpr,0):'—'}</title><circle cx="${x}" cy="${yy}" r="${r}" fill="${col}" opacity=".18"/><circle cx="${x}" cy="${yy}" r="${r}" fill="none" stroke="${col}" stroke-width="2.5"/><circle cx="${x}" cy="${yy}" r="3.5" fill="${col}"/></g>`;
+    // v8: label all active ads (was capped at 8)
+    const fs=n>10?9.5:n>6?11:12.5;
+    const below=i%2===1&&n>4;
+    const ty1=below?yy+r+16:yy-r-18, ty2=below?yy+r+30:yy-r-4;
+    svg+=`<text x="${x}" y="${ty1}" text-anchor="middle" font-size="${fs}" font-weight="800" fill="#23262c">${esc(String(a.name).length>14?String(a.name).slice(0,13)+'…':a.name)}</text>`;
+    svg+=`<text x="${x}" y="${ty2}" text-anchor="middle" font-size="10" fill="#70757f">${pct(share*100,0)} · CPR ${Number.isFinite(a.cpr)?fmt(a.cpr,0):'—'}</text>`;
+  });
+  svg+=`<text x="${W-14}" y="${H-10}" text-anchor="end" font-size="10.5" fill="#8a9099">未启用的小额广告不显示 · 气泡越大 = Meta 押越多钱</text>`;
+  el.innerHTML=`<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;display:block">${svg}</svg>`;
+}
+
+function renderFour(){
+  const ctx=context();const anyDaily=ads.some(a=>Number.isFinite(a.dailyFrequency));const wn=$('#windowNote');wn.classList.remove('info-note');
+  if(usingDemo){wn.classList.remove('hidden');wn.innerHTML='📌 <b>示例数据</b>（你 Jul 8–17 每日 Breakdown）。左侧上传新 Export 替换。所有广告用<b>每日窗口</b>聚合。';}
+  else if(!anyDaily){
+    const anyDayRows=ads.some(a=>a.hasDailyRows);wn.classList.remove('hidden');
+    if(anyDayRows){wn.innerHTML=`✅ 检测到每日 Breakdown（${series.length} 天）——但<b>没读到每天的 Frequency</b>（Frequency / Reach 栏位缺失或认错）。点右上「栏位对应」检查一次；在那之前频次分析已自动降级。`;}
+    else{wn.innerHTML='⚠ 这份数据没有按天拆开（每支广告只有汇总一行），Frequency 是累计值，不能直接套每日 1.15 / 1.25 角色线。导出时勾 Breakdown → Time → Day。';}
+  }
+  else{wn.classList.remove('hidden');wn.innerHTML=`✅ 每日 Breakdown 已识别：${series.length} 天 · ${ctx.active.length} 支在花费 · 频次按天计算（平时 + 峰值）· CPR 分层对标。`;wn.classList.add('info-note');}
+  const spend=ctx.active.reduce((s,a)=>s+a.spend,0),imp=ctx.active.reduce((s,a)=>s+(a.impressions||0),0),res=ctx.active.reduce((s,a)=>s+(a.results||0),0);
+  const wFreq=imp?ctx.active.reduce((s,a)=>s+((freqOf(a)||0)*(a.impressions||0)),0)/imp:NaN;const cpm=imp?spend/imp*1000:NaN,cpr=res?spend/res:NaN;const fr=freqRole(wFreq);
+  const cprBadge=Number.isFinite(ctx.target)?(cpr<=ctx.target?badge('达标','good'):badge('高于目标','warn')):'';
+  $('#fourCards').innerHTML=metric('① 先读','Total Spend',money(spend),`${ctx.active.length} 支在花费`)+metric('② 再读','Daily Frequency',fmt(wFreq,3),`账号加权 &nbsp;${badge(fr.label,fr.cls)}`)+metric('③ 再读','Average CPM',money(cpm),'触达成本；只是线索')+metric('④ 最后','Cost / Result',money(cpr),`目标 ${Number.isFinite(ctx.target)?money(ctx.target):'—'} &nbsp;${cprBadge}`);
+  const diag=accountDiagnosis(ctx);$('#moveLead').textContent=diag.lead;$('#moveBody').innerHTML=`<p>${diag.body}</p>`;
+  renderFunnelMap();
+  if(!$('#targetCPR').value&&Number.isFinite(ctx.cprMed))$('#targetCPR').placeholder='例 '+fmt(ctx.cprMed,0);
+  const rt=ctx.active.filter(a=>Number.isFinite(a.cpr));const passN=rt.filter(a=>Number.isFinite(ctx.target)&&a.cpr<=ctx.target).length;
+  const lm=ctx.layerCprMed;const lmStr=[['prospect','拓新'],['mid','中段'],['retarget','再营销']].filter(x=>Number.isFinite(lm[x[0]])).map(x=>`${x[1]} ${money(lm[x[0]])}`).join(' · ')||'—';
+  $('#targetSummary').innerHTML=(Number.isFinite(targetCPR)&&targetCPR>0?`目标 CPR = <b>${money(targetCPR)}</b>（打平线）。`:`未设定，暂用总中位 <b>${money(ctx.cprMed)}</b> 参考。`)+`<br>在跑有 CPR 的 ${rt.length} 支里 <b>${passN}</b> 支达标。<br><span class="mini">分层中位（判读用）：${lmStr}</span><br><span class="mini">CPR 要跟每单毛利比，跟同层比，不跟跨层的广告比。</span>`;
+  const top=[...ctx.active].sort((a,b)=>b.spend-a.spend).slice(0,6),max=Math.max(...top.map(a=>a.spend),0);
+  $('#spendBars').innerHTML=top.map(a=>{const c=freqRole(freqOf(a)).cls,col=c==='good'?'var(--green)':c==='rt'?'var(--purple)':c==='info'?'var(--blue)':'#9aa4b4';return `<div class="bar"><div><span class="dot" style="background:${col}"></span>${esc(shortName(a.name))}</div><div class="track"><div class="fill" style="width:${max?Math.max(4,a.spend/max*100):0}%"></div></div><div class="num">${money(a.spend)}<br><span class="mini">${pct(a.spend/ctx.totalSpend*100,0)}</span></div></div>`}).join('')||'—';
+  const g={prospect:{s:0,label:'拓新',col:'var(--green)'},mid:{s:0,label:'中段',col:'var(--blue)'},retarget:{s:0,label:'再营销',col:'var(--purple)'}};ctx.active.forEach(a=>{const k=freqRole(freqOf(a)).key;if(g[k])g[k].s+=a.spend});const tot=spend||1;
+  const seg=x=>{const w=x.s/tot*100;return w>0.5?`<div style="width:${w}%;background:${x.col};display:flex;align-items:center;justify-content:center;color:#fff;font-size:11px;font-weight:800;height:26px">${w>10?pct(w,0):''}</div>`:''};
+  $('#funnelStack').innerHTML=`<div style="display:flex;border-radius:9px;overflow:hidden;border:1px solid var(--line)">${seg(g.prospect)}${seg(g.mid)}${seg(g.retarget)}</div><div class="mini" style="margin-top:8px">拓新 ${pct(g.prospect.s/tot*100,0)} · 中段 ${pct(g.mid.s/tot*100,0)} · 再营销 ${pct(g.retarget.s/tot*100,0)}</div>`;
+  let fd;if(g.retarget.s/tot<0.05)fd={h:'缺下层：钱几乎全在拓新',p:'补一支下层承接，通常最快拉低整体 CPR。'};else if(g.prospect.s/tot<0.2)fd={h:'缺上层：漏斗可能在干涸',p:'补一支低 CPM 的拓新。'};else fd={h:'漏斗结构大致平衡',p:'保持，一次只调一个变量。'};
+  $('#funnelDiag').innerHTML=`<h4>${fd.h}</h4><p>${fd.p}</p>`;
+  const list=[...ads].sort((a,b)=>b.spend-a.spend);const actSet=new Set(ctx.active);
+  const THEAD='<thead><tr><th>广告</th><th>① Spend</th><th>② Freq</th><th>③ CPM</th><th>④ CPR（vs 同层）</th><th>象限</th><th>角色 · 趋势</th><th>系统在说什么</th><th>一个动作</th></tr></thead>';
+  const rowHtml=a=>{const c=classify(a,ctx),q=quadrantOf(a,ctx);const favg=Number.isFinite(a.dailyFrequency)?fmt(a.dailyFrequency,3):'—';const fpk=Number.isFinite(a.dailyFrequencyMax)?fmt(a.dailyFrequencyMax,3):'—';const rtDay=Number.isFinite(a.dailyFrequencyMax)&&a.dailyFrequencyMax>=FREQ_RETARGET&&(!Number.isFinite(a.dailyFrequency)||a.dailyFrequency<FREQ_RETARGET);
+    let cc='—';if(Number.isFinite(a.cpr)){const tag=Number.isFinite(c.layerMed)?(a.cpr>c.layerMed*1.05?' <span class="mini" style="color:var(--orange)">↑同层</span>':(a.cpr<=c.layerMed?' <span class="mini" style="color:var(--green)">✓同层</span>':'')):'';cc=money(a.cpr)+tag+(Number.isFinite(c.layerMed)?`<br><span class="mini">同层中位 ${fmt(c.layerMed,0)}</span>`:'');}
+    return `<tr><td data-l="广告"><b>${esc(shortName(a.name))}</b><br><span class="mini">Results ${fmt(a.results,0)}</span></td><td class="num" data-l="Spend">${money(a.spend)}<br><span class="mini">${pct(c.share*100,1)}</span></td><td class="num" data-l="Freq">平时 ${favg}<br><span class="mini">峰值 ${fpk}</span><br>${badge(c.fr.label,c.fr.cls)}${rtDay?'<br>'+badge('有再营销的日子','rt'):''}</td><td class="num" data-l="CPM">${money(a.cpm)}</td><td class="num" data-l="CPR">${cc}</td><td data-l="象限">${q?badge(q.label,c.cls):'—'}</td><td data-l="角色">${badge(c.role,c.cls)}${c.trendTag?'<br>'+badge(c.trendTag.t,c.trendTag.c):''}</td><td data-l="系统在说什么" style="min-width:210px;color:var(--muted);line-height:1.5">${c.story}</td><td data-l="一个动作" style="min-width:180px;line-height:1.5">${c.move}</td></tr>`};
+  const bigs=list.filter(a=>actSet.has(a)),smalls=list.filter(a=>!actSet.has(a));
+  $('#fourTable').innerHTML=THEAD+'<tbody>'+bigs.map(rowHtml).join('')+'</tbody>';
+  $('#smallAds').innerHTML=smalls.length?`<details style="margin-top:12px"><summary class="mini" style="cursor:pointer;font-weight:700">▸ 另有 ${smalls.length} 支小额 / 暂停 / 未启用广告（花费占比 &lt; 2%）— 点开查看</summary><div class="table-wrap" style="margin-top:10px"><table>${THEAD}<tbody>${smalls.map(rowHtml).join('')}</tbody></table></div></details>`:'';
+  const cells={prospect:[],'exp-prospect':[],concentrated:[],retarget:[]};ctx.active.forEach(a=>{const q=quadrantOf(a,ctx);if(q&&cells[q.key])cells[q.key].push(a)});
+  const who=k=>cells[k].length?cells[k].map(a=>esc(shortName(a.name))).join('<br>'):'<span class="mini">（无）</span>';
+  const cell=(k,t,d)=>`<div style="background:#fbfcfd;border:1px solid ${cells[k].length?'var(--yellow)':'var(--line)'};border-radius:12px;padding:12px;min-height:92px"><h4 style="margin:0 0 5px;font-size:13px">${t}</h4><p class="mini" style="margin:0">${d}</p><div style="margin-top:7px;font-size:11.5px;font-weight:600">${who(k)}</div></div>`;
+  $('#quadrant').innerHTML=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:9px"><div class="mini" style="text-align:center">低频·拓新侧</div><div class="mini" style="text-align:center">高频·再营销侧</div>${cell('prospect','拓新（低CPM）','便宜触达新人，上层')}${cell('concentrated','集中投放','便宜但集中在少数人')}${cell('exp-prospect','昂贵拓新（高CPM）','用较贵受众拓新，排查')}${cell('retarget','再营销','小而热反复看，下层')}</div>`;
+}
+
+/* ---- 02 TREND ---- */
+function spark(vals,color){
+  const v=vals.map(x=>Number.isFinite(x)?x:null),nums=v.filter(x=>x!=null);
+  if(nums.length<2)return '<div class="mini" style="padding:14px 0">数据不足</div>';
+  const min=Math.min(...nums),max=Math.max(...nums),rng=(max-min)||1,W=300,H=70,pad=8,n=v.length;
+  let d='',dots='';v.forEach((x,i)=>{if(x==null)return;const px=pad+i*(W-2*pad)/(n-1),py=H-pad-((x-min)/rng)*(H-2*pad);d+=(d?'L':'M')+px.toFixed(1)+','+py.toFixed(1)+' ';if(i===n-1)dots=`<circle cx="${px.toFixed(1)}" cy="${py.toFixed(1)}" r="4" fill="${color}"/>`});
+  return `<svg class="spark" viewBox="0 0 ${W} ${H}"><path d="${d}" fill="none" stroke="${color}" stroke-width="3"/>${dots}</svg>`;
+}
+function trendOf(vals){const n=vals.filter(Number.isFinite);if(n.length<4)return 0;const h=Math.floor(n.length/2);const a=n.slice(0,h).reduce((s,x)=>s+x,0)/h,b=n.slice(-h).reduce((s,x)=>s+x,0)/h;return (b-a)/(Math.abs(a)||1);}
+function renderTrend(){
+  if(!series.length){$('#trendCards').innerHTML='<div class="card">这份 Export 没有每日 Breakdown，无法画趋势。请勾选 Breakdown → Time → Day。</div>';$('#trendLead').textContent='无每日数据';$('#trendBody').innerHTML='';return;}
+  const defs=[['Spend','spend',v=>money(v),'#111',0],['报名 Results','results',v=>fmt(v,0),'var(--green)',1],['CPR','cpr',v=>money(v),'var(--red)',-1],['CTR','ctr',v=>pct(v,2),'var(--blue)',1],['每日 Frequency','frequency',v=>fmt(v,3),'var(--purple)',0],['CPM','cpm',v=>money(v),'var(--orange)',-1]];
+  $('#trendCards').innerHTML=defs.map(([label,key,f,col,gd])=>{const vals=series.map(s=>s[key]);const last=[...vals].reverse().find(Number.isFinite);const tr=trendOf(vals);const arrow=Math.abs(tr)<0.05?'→':(tr>0?'↑':'↓');const good=gd===0?'':(gd>0?(tr>0.05?'good':(tr<-0.05?'bad':'')):(tr<-0.05?'good':(tr>0.05?'bad':'')));const acls=good==='good'?'color:var(--green)':good==='bad'?'color:var(--red)':'color:var(--muted)';return `<div class="card tcard"><div class="tl">${label}</div><div class="tv">${f(last)} <span style="font-size:15px;${acls}">${arrow}</span></div>${spark(vals,col)}<div class="mini">${series[0].day} → ${series[series.length-1].day}</div></div>`}).join('');
+  const rTr=trendOf(series.map(s=>s.results)),cprTr=trendOf(series.map(s=>s.cpr)),spTr=trendOf(series.map(s=>s.spend));
+  const resArr=series.map(s=>s.results).filter(Number.isFinite),cprArr=series.map(s=>s.cpr).filter(Number.isFinite);
+  const dir=t=>Math.abs(t)<0.08?'基本平稳':(t>0?'在上升':'在下降');
+  const lead=`近 ${series.length} 天：花费${dir(spTr)}，报名${dir(rTr)}，CPR${dir(cprTr)}`;
+  const cprGoodBad=cprTr<-0.08?'（CPR 在降，好）':cprTr>0.08?'（CPR 在升，要留意）':'';
+  const body=`<p>报名量在 ${fmt(Math.min(...resArr),0)}–${fmt(Math.max(...resArr),0)} /天之间，CPR 在 ${money(Math.min(...cprArr))}–${money(Math.max(...cprArr))} 之间波动${cprGoodBad}。`+(Math.abs(rTr)<0.08&&Math.abs(cprTr)<0.08?'没有明显趋势，属于 maintain 阶段——先稳住，别急着大改。':'')+`<br><span class="mini">注意：这只到"报名"。真正判断方向要看成交 RM6888 和毛利的周趋势（接 CRM 主表）。</span></p>`;
+  $('#trendLead').textContent=lead;$('#trendBody').innerHTML=body;
+}
+
+/* ---- 03 CREATIVE ---- */
+function creativeKey(name){const m=String(name).match(/PEPC\s*\d+/i);if(m)return m[0].toUpperCase().replace(/\s+/g,' ');const w=String(name).match(/Winner\s*Post\s*ID\s*\d+/i);if(w)return 'Winner';const e=String(name).match(/\b(Eunice|Testi)\b/i);if(e)return e[0];return shortName(name);}
+function renderCreative(){
+  const groups=new Map();ads.forEach(a=>{const k=creativeKey(a.name);if(!groups.has(k))groups.set(k,[]);groups.get(k).push(a)});
+  const rows=[...groups.entries()].map(([k,arr])=>({k,spend:arr.reduce((s,a)=>s+a.spend,0),results:arr.reduce((s,a)=>s+(a.results||0),0),n:arr.length,live:arr.filter(a=>a.spend>1).length,shares:arr.reduce((s,a)=>s+nz(a.shares),0)})).sort((a,b)=>b.spend-a.spend);
+  const max=Math.max(...rows.map(r=>r.spend),0);
+  $('#pepcBars').innerHTML=rows.map(r=>`<div class="bar"><div><b>${esc(r.k)}</b><br><span class="mini">${r.n} 支 · ${r.live} 活</span></div><div class="track"><div class="fill" style="width:${max?Math.max(4,r.spend/max*100):0}%"></div></div><div class="num">${money(r.spend)}<br><span class="mini">${fmt(r.results,0)} 报名</span></div></div>`).join('')||'—';
+  const winners=rows.filter(r=>r.live>0&&r.results>0);const thin=winners.filter(r=>r.live<3);
+  $('#pepcDiag').innerHTML=`<h4>断档预警</h4><p>${thin.length?'这些在赢的母素材<b>活广告 &lt; 3 条</b>，有断档风险（历史教训：winner 烧完当天全账户塌）：<b>'+thin.map(r=>esc(r.k)).join('、')+'</b>。给它们排 variants（同 PEPC × 新 hook）。':'各 winning PEPC 的活广告数量暂时够。'}<br><span class="mini">命名规范（PEPC### / hook#）后，这页会更准。</span></p>`;
+  const withImp=ads.filter(a=>a.impressions>200).sort((a,b)=>nz(b.shares)-nz(a.shares));
+  $('#creativeTable').innerHTML='<thead><tr><th>广告</th><th>Shares</th><th>每千次分享</th><th>Reactions</th><th>Comments</th><th>信号</th></tr></thead><tbody>'+withImp.map(a=>{const sp=rate(a.shares,a.impressions)*10;const sig=nz(a.shares)>=20?badge('高共鸣·像在教育','good'):nz(a.shares)>=5?badge('中等','info'):badge('低','neutral');return `<tr><td data-l="广告">${esc(shortName(a.name))}</td><td class="num" data-l="Shares">${fmt(nz(a.shares),0)}</td><td class="num" data-l="每千次分享">${Number.isFinite(sp)?fmt(sp,2):'—'}</td><td class="num" data-l="Reactions">${fmt(nz(a.reactions),0)}</td><td class="num" data-l="Comments">${fmt(nz(a.comments),0)}</td><td data-l="信号">${sig}</td></tr>`}).join('')+'</tbody>';
+}
+
+/* ---- 04 MICRO FUNNEL ---- */
+function renderMicro(){
+  const T=k=>ads.reduce((s,a)=>s+nz(a[k]),0);
+  const imp=T('impressions'),clk=T('linkClicks'),lp=T('lpViews'),res=T('results');
+  const ctr=rate(clk,imp),clickReg=rate(res,clk);
+  const lpBroken=lp>0&&lp<res;
+  const lw=$('#lpWarn');
+  if(lpBroken){lw.classList.remove('hidden');lw.innerHTML=`⚠ <b>落地页浏览追踪异常：</b>LP views（${fmt(lp,0)}）比报名数（${fmt(res,0)}）还少，逻辑上不可能——说明 LP view 像素没正确触发。<b>已改用「点击 → 报名」判断，请忽略 LP view 那一段，并去修 pixel。</b>`;}
+  else lw.classList.add('hidden');
+  const stepR=(label,pctv)=>`<div class="steprate">▸ ${label} ${pct(pctv,pctv<1?2:1)}</div>`;
+  $('#microFunnel').innerHTML=`<div class="step3"><div class="stepnode">展示<br><b>${fmt(imp,0)}</b></div>${stepR('CTR',ctr)}<div class="stepnode">点击<br><b>${fmt(clk,0)}</b></div>${stepR('点击→报名',clickReg)}<div class="stepnode" style="background:var(--green)">报名<br><b>${fmt(res,0)}</b></div>${lpBroken?'<span class="mini" style="color:var(--red)">（LP view 追踪坏了，已跳过）</span>':''}</div>`;
+  const acctCTR=ctr,acctCR=clickReg;
+  $('#microTable').innerHTML='<thead><tr><th>广告</th><th>展示</th><th>CTR</th><th>CPC</th><th>点击</th><th>点击→报名</th><th>诊断</th></tr></thead><tbody>'+[...ads].sort((a,b)=>b.spend-a.spend).map(a=>{const cr=rate(a.results,a.linkClicks);let d;if(a.impressions<400)d=badge('数据不足','neutral');else if(Number.isFinite(a.ctr)&&Number.isFinite(acctCTR)&&a.ctr<acctCTR*0.6)d=badge('点击弱 · 改 Hook','bad');else if(Number.isFinite(cr)&&Number.isFinite(acctCR)&&cr<acctCR*0.6)d=badge('点了不报名 · 查落地页/报价','warn');else if(a.results>0)d=badge('健康','good');else d=badge('0 报名 · 观察','neutral');return `<tr><td data-l="广告">${esc(shortName(a.name))}</td><td class="num" data-l="展示">${fmt(a.impressions,0)}</td><td class="num" data-l="CTR">${pct(a.ctr,2)}</td><td class="num" data-l="CPC">${money(a.cpc)}</td><td class="num" data-l="点击">${fmt(a.linkClicks,0)}</td><td class="num" data-l="点击→报名">${pct(cr)}</td><td data-l="诊断">${d}</td></tr>`}).join('')+'</tbody>';
+}
+
+/* ---- 05 VIDEO ---- */
+function renderVideo(){
+  const T=k=>ads.reduce((s,a)=>s+(Number.isFinite(a[k])?a[k]:0),0);
+  const v25=T('p25'),v50=T('p50'),v75=T('p75'),v95=T('p95'),v3=T('v3sec'),impT=T('impressions');
+  const hasHook=v3>0&&impT>0;
+  const n=$('#videoNotice');n.classList.remove('hidden');
+  if(hasHook){n.classList.add('info-note');n.innerHTML=`✅ 有 3 秒播放数据 —— <b>Hook Rate（账号）= ${pct(rate(v3,impT),1)}</b>（3 秒播放 ÷ 展示）。Hook 弱先改开头 3 秒；Hook 过关再看下面 25→50 的留存（Meat 强不强）。`;}
+  else{n.classList.remove('info-note');n.innerHTML='ℹ 没有 3 秒播放，无法算 Hook Rate。改用 25%→50%→75%→95% 看进入主体后的留存（Meat 强不强）。';}
+  const h2550=rate(v50,v25),h5075=rate(v75,v50),h7595=rate(v95,v75),c25=rate(v95,v25);
+  const mc=(l,v,s)=>`<div class="card metric"><div class="label">${l}</div><div class="value">${v}</div><div class="sub">${s}</div></div>`;
+  const hookCard=hasHook?mc('Hook Rate',pct(rate(v3,impT),1),'3 秒 ÷ 展示'):'';
+  $('#videoCards').innerHTML=hookCard+mc('25%→50%',pct(h2550),'主体前段')+mc('50%→75%',pct(h5075),'中段')+mc('75%→95%',pct(h7595),'后段')+(hasHook?'':mc('95%/25%',pct(c25),'进入主体后到近结尾'));
+  const arr=[['25→50',h2550],['50→75',h5075],['75→95',h7595],['95/25',c25]].filter(x=>Number.isFinite(x[1]));
+  $('#watchBars').innerHTML=arr.map(([l,v])=>`<div class="bar"><div>${l}</div><div class="track"><div class="fill" style="width:${Math.max(4,Math.min(100,v))}%"></div></div><div class="num">${pct(v)}</div></div>`).join('')||'无数据';
+  let title,text;if(!(v25>0)){title='没有足够视频数据';text='这份 Export 没有视频播放栏位。';}else{const vals=[['25%→50%',h2550],['50%→75%',h5075],['75%→95%',h7595]].filter(x=>Number.isFinite(x[1])).sort((a,b)=>a[1]-b[1]);title='最大流失在 '+(vals[0]?vals[0][0]:'未知');text=(hasHook?'Hook（3 秒）过关的前提下，':'')+'流失最大的那段，是脚本要先改的地方。';}
+  $('#videoDiag').innerHTML=`<h4>${title}</h4><p>${text}</p>`;
+  const FIX={'25→50':'主体开场没接住 hook 的承诺——头 3 句先兑现钩子，别铺垫','50→75':'中段拖、论证重复——把中段砍一半，一句话一个信息','75→95':'结尾前流失——CTA 太拖或结尾没有期待感，提前收口'};
+  const HK=hasHook?'<th>Hook</th>':'';
+  $('#videoTable').innerHTML=`<thead><tr><th>广告</th>${HK}<th>25→50</th><th>50→75</th><th>75→95</th><th>95/25</th><th>Avg Watch</th><th>断点在哪 · 怎么修</th></tr></thead><tbody>`+[...ads].sort((a,b)=>b.spend-a.spend).map(a=>{
+    const S=[['25→50',rate(a.p50,a.p25)],['50→75',rate(a.p75,a.p50)],['75→95',rate(a.p95,a.p75)]].filter(x=>Number.isFinite(x[1]));
+    let diagCell;
+    if(!S.length||!(a.p25>0)){diagCell=badge('无视频数据','neutral');}
+    else{const worst=S.slice().sort((x,y)=>x[1]-y[1])[0];const cls=worst[1]<55?'bad':worst[1]<70?'warn':'good';const label=worst[1]<70?`断点 ${worst[0]}（${pct(worst[1],0)}）`:'各段均衡';diagCell=badge(label,cls)+(worst[1]<70?`<div class="mini" style="margin-top:5px;line-height:1.5">${FIX[worst[0]]}</div>`:'<div class="mini" style="margin-top:5px">留存健康，问题更可能在 hook</div>');}
+    const hl=(k,v)=>{const w=S.length&&S.slice().sort((x,y)=>x[1]-y[1])[0][0]===k&&Number.isFinite(v)&&v<70;return `<span style="${w?'color:var(--red);font-weight:800':''}">${pct(v)}</span>`};
+    const hookCell=hasHook?`<td class="num" data-l="Hook">${pct(rate(a.v3sec,a.impressions),1)}</td>`:'';
+    return `<tr><td data-l="广告">${esc(shortName(a.name))}</td>${hookCell}<td class="num" data-l="25→50">${hl('25→50',rate(a.p50,a.p25))}</td><td class="num" data-l="50→75">${hl('50→75',rate(a.p75,a.p50))}</td><td class="num" data-l="75→95">${hl('75→95',rate(a.p95,a.p75))}</td><td class="num" data-l="95/25">${pct(rate(a.p95,a.p25))}</td><td class="num" data-l="Avg Watch">${Number.isFinite(a.avgWatch)&&a.avgWatch?fmt(a.avgWatch,1)+'s':'—'}</td><td data-l="断点" style="min-width:190px">${diagCell}</td></tr>`}).join('')+'</tbody>';
+}
+
+/* ---- 06 RANK ---- */
+function setupRanking(){const o=[['spend','Spend'],['dailyFrequency','每日 Frequency'],['cpm','CPM'],['cpr','CPR'],['results','Results'],['ctr','CTR'],['shares','Shares'],['impressions','Impressions'],['spendTrend','Spend 趋势']];$('#sortMetric').innerHTML=o.map(([v,l])=>`<option value="${v}">${l}</option>`).join('');$('#sortMetric').onchange=renderRank;$('#sortDir').onchange=renderRank;renderRank();}
+function renderRank(){const k=$('#sortMetric').value,d=$('#sortDir').value;const list=[...ads].sort((a,b)=>{const av=Number.isFinite(a[k])?a[k]:(d==='asc'?Infinity:-Infinity),bv=Number.isFinite(b[k])?b[k]:(d==='asc'?Infinity:-Infinity);return d==='asc'?av-bv:bv-av});const f=v=>['spend','cpm','cpr','cpc'].includes(k)?money(v):k==='ctr'?pct(v,2):k==='dailyFrequency'?fmt(v,3):k==='spendTrend'?pct(nz(v)*100,0):fmt(v,0);$('#rankLabel').textContent=$('#sortMetric').selectedOptions[0].textContent+' · '+$('#sortDir').selectedOptions[0].textContent;$('#rankHighlights').innerHTML=list.slice(0,3).map((a,i)=>`<div class="card metric"><div class="label">#${i+1}</div><div class="value" style="font-size:15px">${esc(shortName(a.name))}</div><div class="sub">${$('#sortMetric').selectedOptions[0].textContent}：<b>${f(a[k])}</b></div></div>`).join('');$('#rankTable').innerHTML='<thead><tr><th>#</th><th>广告</th><th>当前指标</th><th>Spend</th><th>Freq</th><th>CPM</th><th>CPR</th><th>CTR</th></tr></thead><tbody>'+list.map((a,i)=>`<tr><td data-l="#">${i+1}</td><td data-l="广告">${esc(shortName(a.name))}</td><td class="num" data-l="当前指标"><b>${f(a[k])}</b></td><td class="num" data-l="Spend">${money(a.spend)}</td><td class="num" data-l="Freq">${fmt(freqOf(a),3)}</td><td class="num" data-l="CPM">${money(a.cpm)}</td><td class="num" data-l="CPR">${money(a.cpr)}</td><td class="num" data-l="CTR">${pct(a.ctr,2)}</td></tr>`).join('')+'</tbody>';}
+
+function showPage(id){$$('.nav button').forEach(b=>b.classList.toggle('active',b.dataset.page===id));$$('.page').forEach(p=>p.classList.toggle('active',p.id===id));const m={fourpi:['4PI 解读','Spend → Frequency → CPM → Cost per Result（CPR 分层对标）'],trend:['趋势','账号层的走向：先看方向，再动广告'],creative:['素材 / PEPC','哪个母素材在赢 · 共鸣信号'],micro:['站内漏斗','展示 → 点击 → 报名 的自动 3 秒诊断'],video:['完播','Hook Rate（有 3 秒就用）+ 25→50→75→95'],ranking:['排序','按任意已识别指标']};$('#title').textContent=m[id][0];$('#desc').textContent=m[id][1];window.scrollTo({top:0,behavior:'smooth'});}
+$$('.nav button').forEach(b=>b.onclick=()=>showPage(b.dataset.page));
+$('#applyTarget').onclick=()=>{const v=parseFloat($('#targetCPR').value);targetCPR=(Number.isFinite(v)&&v>0)?v:null;renderFour();showMsg(targetCPR?('已套用目标 CPR = '+money(targetCPR)):'已清除目标。',false)};
+$('#targetCPR').addEventListener('keydown',e=>{if(e.key==='Enter')$('#applyTarget').click()});
+function showMsg(t,e){const m=$('#message');m.textContent=t;m.classList.remove('hidden');m.classList.toggle('bad-note',!!e);clearTimeout(showMsg._t);showMsg._t=setTimeout(()=>m.classList.add('hidden'),4200)}
+
+/* boot: landing screen — analysis runs only after data is provided */
+setupRanking();
+</script>
+</body></html>
